@@ -23,10 +23,8 @@ async def analyze(
     db: Session = Depends(get_db),
 ) -> AnalyzeIncidentResponse:
     report = await analyze_telemetry(request.metrics, request.logs)
-    incident = persist_analysis_incident(
-        db,
-        request.metrics,
-        request.logs,
-        report,
-    )
+    incident = persist_analysis_incident(db, request.metrics, request.logs, report)
+except Exception as e:
+    logger.error(f"Analysis failed: {e}")
+    raise AppError("ANALYSIS_FAILED", "Incident analysis failed.", 500) from e
     return AnalyzeIncidentResponse(**report, incident_id=incident.id)
