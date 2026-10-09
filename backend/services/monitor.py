@@ -191,14 +191,13 @@ async def monitor_loop() -> None:
                                 )
                             else:
                                 slow_probe_counts[endpoint.id] = 0
-                            anomaly = _classify_anomaly(
-                                probe,
-                                sla_ms,
-                                slow_probe_counts[endpoint.id],
-                            )
-                        else:
-                            slow_probe_counts[endpoint.id] = 0
-                            anomaly = "CRASH"
+                           # Clear crash counter when healthy
+            if endpoint.id in slow_probe_counts:
+              del slow_probe_counts[endpoint.id]
+          anomaly = _classify_anomaly(probe, sla_ms, slow_probe_counts.get(endpoint.id, 0))
+     else:
+        slow_probe_counts[endpoint.id] = 0
+         anomaly = "CRASH"
                         if anomaly is None:
                             active_incidents.discard(endpoint.id)
                         elif endpoint.id not in active_incidents:
