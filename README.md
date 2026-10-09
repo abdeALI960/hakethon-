@@ -176,7 +176,17 @@ APP_URL="http://localhost:3000"
 
 # VITE_API_BASE_URL: Backend REST API server for live daemon integration
 VITE_API_BASE_URL="http://localhost:5000"
+
+# Backend-only settings; do not put API_KEY in any VITE_* variable.
+ENV=development
+AUTH_ENABLED=false
+API_KEY=""
 ```
+
+When `AUTH_ENABLED=true`, backend API requests use `X-API-Key`. Any value in a
+`VITE_*` variable is embedded in the browser bundle and is not secret. For
+production, inject the key at a trusted reverse proxy or replace shared-key
+authentication with server-managed JWT sessions.
 
 ---
 
@@ -275,7 +285,8 @@ To connect OpsPilot to a real Python/Flask daemon:
 {
   "caseId": "EMG-8192",
   "status": "Dispatched",
-  "aiTriageSummary": "Critical Priority Level 1: Immediate failover triggered."
+  "aiTriageSummary": "Critical Priority Level 1: Immediate failover triggered.",
+  "safetyNotice": "AI output is decision support only and does not replace professional human evaluation."
 }
 ```
 
@@ -290,6 +301,22 @@ To connect OpsPilot to a real Python/Flask daemon:
 
 ## 15. Testing & Troubleshooting
 
+### Backend pytest suite
+
+Install the backend dependencies (including pytest) and run the API, security,
+LLM, pipeline, and KPI tests:
+
+```bash
+pip install -r requirements.txt
+make test-backend
+```
+
+The suite uses an in-memory SQLite database for API and pipeline tests, with
+fake LLM providers and executors so it makes no external LLM or service calls
+and starts no real demo processes. The DB inspector tests use a temporary
+SQLite file because the inspector intentionally opens databases in read-only
+URI mode.
+
 * **Build Validation**: Run `npm run build` to verify clean compilation.
 * **Type Checking**: Run `npm run lint` (`tsc --noEmit`) to verify zero TypeScript errors.
 * **Connection Failures**: If target endpoints return connection errors, ensure the target server is listening on the configured port and permits CORS requests from `http://localhost:3000`.
@@ -300,6 +327,7 @@ To connect OpsPilot to a real Python/Flask daemon:
 
 * **Telemetry Logs**: Telemetry streams should sanitize authentication tokens, bearer headers, and passwords prior to displaying them in incident post-mortems.
 * **Clinical Triage Notice**: For emergency response workflows, AI diagnostics serve exclusively as decision-support information and do not replace professional human evaluation.
+* **Backend API Authentication**: Keep `AUTH_ENABLED=false` for local development only. In production, set `AUTH_ENABLED=true` and inject `X-API-Key` at a trusted reverse proxy; never bundle the key in a `VITE_*` variable.
 
 ---
 

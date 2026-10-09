@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 export const ChangeTargetModal: React.FC = () => {
   const {
@@ -9,26 +10,32 @@ export const ChangeTargetModal: React.FC = () => {
     updateTarget,
     forceProbe,
   } = useApp();
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, isChangeTargetModalOpen, () => setIsChangeTargetModalOpen(false));
 
   const [url, setUrl] = useState(endpointConfig.url);
   const [interval, setInterval] = useState(endpointConfig.probeInterval);
 
   if (!isChangeTargetModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateTarget(url, interval);
-    forceProbe();
-    setIsChangeTargetModalOpen(false);
+    try {
+      await updateTarget(url, interval);
+      await forceProbe(url.trim());
+      setIsChangeTargetModalOpen(false);
+    } catch {
+      // Context reports the error; keep the dialog available for edits.
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-surface-container rounded-xl w-full max-w-lg border border-outline-variant/50 shadow-2xl overflow-hidden">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="change-target-title" tabIndex={-1} className="bg-surface-container rounded-xl w-full max-w-lg border border-outline-variant/50 shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-space-md border-b border-surface-container-high bg-surface-container-low">
           <div className="flex items-center gap-space-sm">
             <span className="material-symbols-outlined text-primary text-[20px]">swap_horiz</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface font-semibold">
+            <h3 id="change-target-title" className="font-headline-md text-headline-md text-on-surface font-semibold">
               Change Target Website / Endpoint
             </h3>
           </div>

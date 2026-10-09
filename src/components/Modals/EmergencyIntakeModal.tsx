@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { EmergencyPriority } from '../../types';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 export const EmergencyIntakeModal: React.FC = () => {
   const { isEmergencyIntakeModalOpen, setIsEmergencyIntakeModalOpen, submitEmergencyCase } = useApp();
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, isEmergencyIntakeModalOpen, () => setIsEmergencyIntakeModalOpen(false));
 
   const [incidentType, setIncidentType] = useState('Critical Server Blackout / Patient Telemetry Loss');
   const [location, setLocation] = useState('Metropolitan Emergency ICU Data Gateway (Rack 04)');
@@ -13,12 +16,31 @@ export const EmergencyIntakeModal: React.FC = () => {
     'Heart rate telemetry stream dropped packets on gateway node. Zero-touch auto-failover requested.'
   );
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [evidenceFile, setEvidenceFile] = useState<File | undefined>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   if (!isEmergencyIntakeModalOpen) return null;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+        setValidationError('Choose a PNG, JPEG, or WebP image.');
+        setEvidenceFile(undefined);
+        setImagePreview(null);
+        e.target.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setValidationError('Evidence images must be 5 MB or smaller.');
+        setEvidenceFile(undefined);
+        setImagePreview(null);
+        e.target.value = '';
+        return;
+      }
+      setValidationError('');
+      setEvidenceFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -27,28 +49,44 @@ export const EmergencyIntakeModal: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    submitEmergencyCase({
-      incidentType,
-      location,
-      callerOrReportedBy,
+    if (validationError) return;
+    const trimmed = {
+      incidentType: incidentType.trim(),
+      location: location.trim(),
+      callerOrReportedBy: callerOrReportedBy.trim(),
+      description: description.trim(),
+    };
+    if (!trimmed.incidentType || !trimmed.location || !trimmed.callerOrReportedBy || !trimmed.description) {
+      setValidationError('Complete all required fields.');
+      return;
+    }
+    if (trimmed.incidentType.length > 200 || trimmed.location.length > 300 ||
+      trimmed.callerOrReportedBy.length > 120 || trimmed.description.length > 2000) {
+      setValidationError('One or more fields exceed the allowed length.');
+      return;
+    }
+    setValidationError('');
+    setIsSubmitting(true);
+    await submitEmergencyCase({
+      ...trimmed,
       priority,
-      description,
       imageUrl: imagePreview || undefined,
       status: 'Dispatched',
-    });
+    }, evidenceFile);
+    setIsSubmitting(false);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-surface-container rounded-xl w-full max-w-2xl border border-outline-variant/50 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="emergency-intake-title" tabIndex={-1} className="bg-surface-container rounded-xl w-full max-w-2xl border border-outline-variant/50 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-space-md border-b border-surface-container-high bg-surface-container-low">
           <div className="flex items-center gap-space-sm">
             <span className="material-symbols-outlined text-error text-[22px]">emergency</span>
             <div>
-              <h3 className="font-headline-md text-headline-md text-on-surface font-semibold">
+              <h3 id="emergency-intake-title" className="font-headline-md text-headline-md text-on-surface font-semibold">
                 Emergency Case Intake &amp; Triage Form
               </h3>
               <p className="font-body-sm text-body-sm text-on-surface-variant">
@@ -130,6 +168,7 @@ export const EmergencyIntakeModal: React.FC = () => {
               </label>
               <input
                 type="text"
+                maxLength={200}
                 value={incidentType}
                 onChange={(e) => setIncidentType(e.target.value)}
                 className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-outline-variant/40 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary"
@@ -143,6 +182,7 @@ export const EmergencyIntakeModal: React.FC = () => {
               </label>
               <input
                 type="text"
+                maxLength={300}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-outline-variant/40 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary"
@@ -158,6 +198,7 @@ export const EmergencyIntakeModal: React.FC = () => {
             </label>
             <input
               type="text"
+              maxLength={120}
               value={callerOrReportedBy}
               onChange={(e) => setCallerOrReportedBy(e.target.value)}
               className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-outline-variant/40 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary"
@@ -172,6 +213,7 @@ export const EmergencyIntakeModal: React.FC = () => {
             </label>
             <textarea
               rows={3}
+              maxLength={2000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="bg-surface-container-lowest px-3 py-2 rounded-lg border border-outline-variant/40 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary resize-none"
@@ -190,7 +232,7 @@ export const EmergencyIntakeModal: React.FC = () => {
                 <span>Select Image File</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp"
                   onChange={handleImageChange}
                   className="hidden"
                 />
@@ -198,7 +240,10 @@ export const EmergencyIntakeModal: React.FC = () => {
               {imagePreview && (
                 <button
                   type="button"
-                  onClick={() => setImagePreview(null)}
+                  onClick={() => {
+                    setImagePreview(null);
+                    setEvidenceFile(undefined);
+                  }}
                   className="text-xs text-error hover:underline cursor-pointer"
                 >
                   Remove Image
@@ -215,6 +260,7 @@ export const EmergencyIntakeModal: React.FC = () => {
                 />
               </div>
             )}
+            {validationError && <p role="alert" className="text-sm text-error">{validationError}</p>}
           </div>
 
           {/* AI Decision Support Disclaimer */}
@@ -236,10 +282,11 @@ export const EmergencyIntakeModal: React.FC = () => {
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               className="px-4 py-2 rounded-lg bg-primary text-on-primary font-medium hover:bg-primary-container hover:text-on-primary-container text-body-md transition-colors cursor-pointer flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-[16px]">send</span>
-              <span>Submit &amp; Route Intake</span>
+              <span>{isSubmitting ? 'Submitting…' : 'Submit &amp; Route Intake'}</span>
             </button>
           </div>
         </form>

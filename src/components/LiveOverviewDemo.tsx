@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { CHAOS_SCENARIOS, ChaosScenario } from '../services/apiClient';
+import { sanitizeDisplay } from '../utils/sanitize';
 
 export const LiveOverviewDemo: React.FC = () => {
   const {
@@ -14,6 +15,13 @@ export const LiveOverviewDemo: React.FC = () => {
     resetServices,
     setIsEmergencyIntakeModalOpen,
     emergencyCases,
+    terminalLogs,
+    chaosRequestInFlight,
+    backendStatus,
+    runtimeSettings,
+    kpis,
+    totalIncidents,
+    avgRecoveryTime,
   } = useApp();
 
   const [selectedService, setSelectedService] = useState<string>('api');
@@ -45,7 +53,7 @@ export const LiveOverviewDemo: React.FC = () => {
                 </span>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Live chaos injection simulator paired with Claude 3.5 Sonnet autonomous diagnostics &amp; self-healing fixer.
+                Live incident response paired with the {runtimeSettings?.llmProvider ?? 'configured'} diagnosis provider.
               </p>
             </div>
           </div>
@@ -327,17 +335,24 @@ export const LiveOverviewDemo: React.FC = () => {
                 <span>STREAM: ACTIVE</span>
               </div>
 
-              <div className="font-code-sm text-code-sm text-on-surface-variant flex flex-col gap-1 max-h-48 overflow-y-auto pt-1">
-                <div className="flex gap-2">
+              <div aria-live="polite" aria-label="Live daemon log stream" className="font-code-sm text-code-sm text-on-surface-variant flex flex-col gap-1 max-h-48 overflow-y-auto pt-1">
+                {backendStatus !== 'connected' && <><div className="flex gap-2">
                   <span className="text-outline">14:35:00.120</span>
                   <span className="text-tertiary">[probe.py]</span>
-                  <span>HTTP GET {endpointConfig.url}/healthz -&gt; 200 OK (18ms)</span>
+                  <span>HTTP GET {sanitizeDisplay(endpointConfig.url)}/healthz -&gt; 200 OK (18ms)</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-outline">14:35:01.125</span>
                   <span className="text-tertiary">[probe.py]</span>
                   <span>All 3 microservices responded within 50ms SLA window</span>
-                </div>
+                </div></>}
+                {terminalLogs.map((line, index) => (
+                  <div key={`${line.timestamp}-${index}`} className="flex gap-2 break-all">
+                    <span className="text-outline shrink-0">{line.timestamp}</span>
+                    <span className="text-tertiary shrink-0">[{line.level}]</span>
+                    <span>{line.message}</span>
+                  </div>
+                ))}
                 {activeStage === 'CHAOS_INJECTED' && (
                   <div className="flex gap-2 text-error animate-pulse">
                     <span className="text-outline">NOW</span>
@@ -415,13 +430,16 @@ export const LiveOverviewDemo: React.FC = () => {
                             {c.caseId}
                           </span>
                           <span className="font-body-md text-body-md text-on-surface font-medium">
-                            {c.incidentType}
+                            {sanitizeDisplay(c.incidentType)}
                           </span>
                         </div>
-                        <p className="text-xs text-outline">{c.description}</p>
+                        <p className="text-xs text-outline">{sanitizeDisplay(c.description)}</p>
                         <p className="text-[11px] text-primary mt-1">
-                          AI Triage: {c.aiTriageSummary}
+                          AI Triage: {sanitizeDisplay(c.aiTriageSummary ?? '')}
                         </p>
+                        {c.safetyNotice && (
+                          <p className="text-[11px] text-outline mt-1">{sanitizeDisplay(c.safetyNotice)}</p>
+                        )}
                       </div>
                     </div>
 
@@ -483,8 +501,8 @@ export const LiveOverviewDemo: React.FC = () => {
 
                     <button
                       type="button"
-                      disabled={activeStage !== 'IDLE'}
-                      onClick={() => triggerChaos(scenario)}
+                      disabled={activeStage !== 'IDLE' || chaosRequestInFlight}
+                      onClick={() => void triggerChaos(scenario)}
                       className={`w-full py-1.5 px-3 rounded text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                         isTargetActive
                           ? 'bg-error text-white animate-pulse'
@@ -495,7 +513,7 @@ export const LiveOverviewDemo: React.FC = () => {
                         {isTargetActive ? 'autorenew' : 'play_arrow'}
                       </span>
                       <span>
-                        {isTargetActive ? 'Healing in Progress...' : 'Inject Chaos Scenario'}
+                        {chaosRequestInFlight ? 'Injecting…' : isTargetActive ? 'Healing in Progress...' : 'Inject Chaos Scenario'}
                       </span>
                     </button>
                   </div>
@@ -507,15 +525,15 @@ export const LiveOverviewDemo: React.FC = () => {
           {/* Quick Metrics */}
           <div className="bg-surface-container rounded-xl p-space-lg shadow-md border border-outline-variant/30 flex flex-col gap-space-sm">
             <h4 className="font-headline-md text-headline-md text-on-surface font-semibold">
-              Live MTTR Benchmark
+              Measured Incident Metrics
             </h4>
             <div className="flex justify-between items-center py-1 border-b border-surface-container-high/40 text-xs">
-              <span className="text-outline">Autonomous Fixer SLA</span>
-              <span className="text-tertiary font-semibold">&lt; 3.0s</span>
+              <span className="text-outline">Average MTTR</span>
+              <span className="text-tertiary font-semibold">{totalIncidents ? avgRecoveryTime : 'n/a'}</span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-surface-container-high/40 text-xs">
-              <span className="text-outline">Human Escalation Rate</span>
-              <span className="text-tertiary font-semibold">0.0% (Zero-Touch)</span>
+              <span className="text-outline">Human Escalations</span>
+              <span className="text-tertiary font-semibold">{kpis?.humanEscalations ?? 0}</span>
             </div>
             <div className="flex justify-between items-center py-1 text-xs">
               <span className="text-outline">Active Daemon PID</span>

@@ -1,8 +1,9 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
+import { sanitizeDisplay } from '../utils/sanitize';
 
 export const IncidentTimeline: React.FC = () => {
-  const { incidents } = useApp();
+  const { incidents, dashboardLoading, dashboardError, backendStatus } = useApp();
 
   return (
     <section className="flex flex-col gap-space-md">
@@ -16,18 +17,31 @@ export const IncidentTimeline: React.FC = () => {
             Incident Timeline
           </h2>
           <span className="bg-surface-container-high px-space-xs py-0.5 rounded text-on-surface-variant font-code-sm text-code-sm">
-            Showing {incidents.length} recorded
+            {dashboardLoading ? 'Loading…' : `Showing ${incidents.length} recorded`}
           </span>
         </div>
 
         <div className="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
-          <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-          <span>Live daemon active</span>
+          <span className={`w-2 h-2 rounded-full ${backendStatus === 'connected' ? 'bg-tertiary animate-pulse' : 'bg-outline'}`}></span>
+          <span>{backendStatus === 'connected' ? 'Backend connected' : backendStatus === 'offline' ? 'Using simulated data' : 'Mock simulation active'}</span>
         </div>
       </div>
 
       {/* Incidents List */}
       <div className="flex flex-col gap-space-md">
+        {dashboardError && (
+          <p role="alert" className="rounded-lg bg-amber-400/10 p-space-md text-amber-300">
+            {dashboardError}
+          </p>
+        )}
+        {dashboardLoading && (
+          <div aria-label="Loading incidents" className="h-24 animate-pulse rounded-xl bg-surface-container" />
+        )}
+        {!dashboardLoading && incidents.length === 0 && (
+          <p className="rounded-lg bg-surface-container p-space-md text-on-surface-variant">
+            No incidents have been recorded yet.
+          </p>
+        )}
         {incidents.map((incident) => (
           <div
             key={incident.id}
@@ -40,7 +54,7 @@ export const IncidentTimeline: React.FC = () => {
                   {incident.id}
                 </span>
                 <span className="font-headline-md text-headline-md font-medium text-on-surface">
-                  {incident.title}
+                  {sanitizeDisplay(incident.title)}
                 </span>
                 <span className="font-code-sm text-code-sm text-outline">
                   {incident.timestamp}
@@ -53,16 +67,32 @@ export const IncidentTimeline: React.FC = () => {
                   <span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
                   <span>{incident.status}</span>
                 </div>
+                {incident.anomalyType && (
+                  <div className="px-space-sm py-1 rounded bg-surface-container-low text-on-surface-variant font-code-sm text-code-sm">
+                    {incident.anomalyType} · {incident.severity ?? 'severity unavailable'}
+                  </div>
+                )}
                 <div className="px-space-sm py-1 rounded bg-surface-container-low text-on-surface-variant font-code-sm text-code-sm">
-                  Detection: <span className="text-primary font-medium">{incident.detectionTimeSec}s</span>
+                  Detection: <span className="text-primary font-medium">{incident.detectionTimeSec === null ? 'n/a' : `${incident.detectionTimeSec}s`}</span>
                 </div>
                 <div className="px-space-sm py-1 rounded bg-surface-container-low text-on-surface-variant font-code-sm text-code-sm">
-                  Fix: <span className="text-tertiary font-medium">{incident.fixTimeSec}s</span>
+                  Fix: <span className="text-tertiary font-medium">{incident.fixTimeSec === null ? 'n/a' : `${incident.fixTimeSec}s`}</span>
                 </div>
                 <div className="flex items-center gap-1 px-space-sm py-1 rounded bg-surface-container-lowest text-tertiary font-label-sm text-label-sm">
                   <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  <span>Resolved</span>
+                  <span>
+                    {incident.status === 'Awaiting Approval' || incident.status === 'Failed'
+                      ? incident.status
+                      : incident.autoHealed === undefined
+                        ? incident.status
+                        : incident.autoHealed ? 'Auto-healed' : 'Human / manual'}
+                  </span>
                 </div>
+                {incident.stageTimestamps && (
+                  <p className="text-xs text-outline">
+                    Injected: {incident.stageTimestamps.injectedAt ?? 'n/a'} · Detected: {incident.stageTimestamps.detectedAt ?? 'n/a'} · Diagnosed: {incident.stageTimestamps.diagnosedAt ?? 'n/a'} · Fixed: {incident.stageTimestamps.fixedAt ?? 'n/a'} · Verified: {incident.stageTimestamps.verifiedAt ?? 'n/a'}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -75,7 +105,7 @@ export const IncidentTimeline: React.FC = () => {
                 </span>
               </div>
               <p className="font-body-lg text-body-lg text-on-surface leading-relaxed">
-                {incident.aiDiagnosticAction}
+                {sanitizeDisplay(incident.aiDiagnosticAction)}
               </p>
             </div>
 
@@ -90,7 +120,7 @@ export const IncidentTimeline: React.FC = () => {
                     Evidence snapshot:
                   </span>
                   <span className="font-code-sm text-code-sm text-error">
-                    {incident.evidenceSnapshot}
+                    {sanitizeDisplay(incident.evidenceSnapshot)}
                   </span>
                 </div>
                 <span className="font-label-sm text-label-sm text-outline group-open:hidden">
@@ -118,7 +148,7 @@ export const IncidentTimeline: React.FC = () => {
                     >
                       {log.level}
                     </span>
-                    <span className="break-all">{log.message}</span>
+                    <span className="break-all">{sanitizeDisplay(log.message)}</span>
                   </div>
                 ))}
               </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
+import { sanitizeDisplay } from '../utils/sanitize';
 
 export const EndpointManager: React.FC = () => {
   const {
@@ -9,6 +10,8 @@ export const EndpointManager: React.FC = () => {
     isProbing,
     setIsAddEndpointModalOpen,
     showToast,
+    endpoints,
+    deleteEndpoint,
   } = useApp();
 
   const [inputUrl, setInputUrl] = useState(endpointConfig.url);
@@ -21,14 +24,18 @@ export const EndpointManager: React.FC = () => {
     setSelectedInterval(endpointConfig.probeInterval);
   }, [endpointConfig.url, endpointConfig.probeInterval]);
 
-  const handleConnect = (e: React.FormEvent) => {
+  const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputUrl.trim()) {
       showToast('Please enter a valid website URL or host:port endpoint', 'warning');
       return;
     }
-    updateTarget(inputUrl.trim(), selectedInterval);
-    forceProbe();
+    try {
+      await updateTarget(inputUrl.trim(), selectedInterval);
+      await forceProbe(inputUrl.trim());
+    } catch {
+      // Context reports the API error and restores the optimistic target.
+    }
   };
 
   const handleClear = () => {
@@ -140,6 +147,23 @@ export const EndpointManager: React.FC = () => {
       </form>
 
       {/* Active Target Telemetry Bar */}
+      {endpoints.length > 0 && (
+        <div className="flex flex-col gap-1" aria-label="Registered endpoints">
+          {endpoints.map((endpoint) => (
+            <div key={endpoint.id} className="flex items-center justify-between rounded bg-surface-container-low px-3 py-2 text-xs">
+              <span className="truncate text-on-surface">{endpoint.name} — {endpoint.url}</span>
+              <button
+                type="button"
+                aria-label={`Delete endpoint ${endpoint.name}`}
+                onClick={() => void deleteEndpoint(endpoint.id)}
+                className="ml-3 text-error hover:underline"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="bg-surface-container-low p-space-md rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-space-md border border-outline-variant/20">
         <div className="flex items-center gap-space-md flex-wrap">
           {/* Target string */}
@@ -148,7 +172,7 @@ export const EndpointManager: React.FC = () => {
               Active Target:
             </span>
             <span className="font-code-sm text-code-sm font-bold text-on-surface">
-              {endpointConfig.url}
+              {sanitizeDisplay(endpointConfig.url)}
             </span>
             <span className="px-1.5 py-0.5 rounded bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold">
               HTTP Probe {endpointConfig.httpStatus} OK
@@ -189,7 +213,7 @@ export const EndpointManager: React.FC = () => {
         <div className="flex items-center gap-space-xs shrink-0">
           <button
             type="button"
-            onClick={forceProbe}
+            onClick={() => void forceProbe()}
             disabled={isProbing}
             className="flex items-center gap-1 px-space-sm py-1 rounded bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors cursor-pointer border border-outline-variant/30"
           >

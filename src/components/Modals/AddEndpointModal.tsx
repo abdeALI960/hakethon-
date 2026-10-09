@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 export const AddEndpointModal: React.FC = () => {
   const { isAddEndpointModalOpen, setIsAddEndpointModalOpen, addEndpoint } = useApp();
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, isAddEndpointModalOpen, () => setIsAddEndpointModalOpen(false));
   const [name, setName] = useState('');
   const [port, setPort] = useState(5004);
   const [url, setUrl] = useState('http://127.0.0.1:5004');
@@ -18,23 +21,27 @@ export const AddEndpointModal: React.FC = () => {
 
   if (!isAddEndpointModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    addEndpoint(name.trim(), Number(port), url.trim());
-    setIsAddEndpointModalOpen(false);
-    setName('');
-    setPort(5004);
-    setUrl('http://127.0.0.1:5004');
+    try {
+      await addEndpoint(name.trim(), Number(port), url.trim());
+      setIsAddEndpointModalOpen(false);
+      setName('');
+      setPort(5004);
+      setUrl('http://127.0.0.1:5004');
+    } catch {
+      // Context reports the API error and rolls back its optimistic update.
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-surface-container rounded-xl w-full max-w-lg border border-outline-variant/50 shadow-2xl overflow-hidden">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="add-endpoint-title" tabIndex={-1} className="bg-surface-container rounded-xl w-full max-w-lg border border-outline-variant/50 shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-space-md border-b border-surface-container-high bg-surface-container-low">
           <div className="flex items-center gap-space-sm">
             <span className="material-symbols-outlined text-primary text-[20px]">add_box</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface font-semibold">
+            <h3 id="add-endpoint-title" className="font-headline-md text-headline-md text-on-surface font-semibold">
               Add Monitored Microservice / Endpoint
             </h3>
           </div>

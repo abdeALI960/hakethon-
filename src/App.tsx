@@ -13,7 +13,7 @@ import { ProfileSettingsModal } from './components/Modals/ProfileSettingsModal';
 import { Toast } from './components/Toast';
 
 const DashboardContent: React.FC = () => {
-  const { activeTab } = useApp();
+  const { activeTab, backendStatus, dashboardError } = useApp();
 
   return (
     <div className="flex flex-col min-h-screen bg-surface text-on-surface antialiased">
@@ -21,6 +21,16 @@ const DashboardContent: React.FC = () => {
 
       <main className="w-full pt-16 bg-surface min-h-[calc(100vh-64px)] flex-1">
         <div className="flex flex-col w-full">
+          {backendStatus === 'offline' && (
+            <div role="status" aria-live="polite" className="mx-margin-desktop mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-200">
+              Backend offline, showing simulated data.
+            </div>
+          )}
+          {backendStatus === 'connected' && dashboardError && (
+            <div role="status" aria-live="polite" className="mx-margin-desktop mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-sm text-amber-200">
+              {dashboardError}
+            </div>
+          )}
           {/* Subtle ambient glow background elements constrained inside wrapper */}
           <div className="relative w-full px-margin-desktop py-space-xl flex flex-col gap-space-xl overflow-hidden">
             <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>

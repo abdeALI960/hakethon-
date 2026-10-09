@@ -2,7 +2,15 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 
 export const KpiMetrics: React.FC = () => {
-  const { totalIncidents, autoHealedRate, avgDetection, avgRecoveryTime } = useApp();
+  const {
+    totalIncidents,
+    autoHealedRate,
+    avgDetection,
+    avgRecoveryTime,
+    kpis,
+    dashboardLoading,
+    dashboardError,
+  } = useApp();
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-space-md">
@@ -14,12 +22,16 @@ export const KpiMetrics: React.FC = () => {
         </span>
         <div className="flex items-baseline gap-space-xs mt-2">
           <span className="font-headline-xl text-headline-xl font-bold text-on-surface tabular-nums">
-            {totalIncidents}
+            {dashboardLoading
+              ? <span aria-hidden="true" className="inline-block h-8 w-12 animate-pulse rounded bg-surface-container-high" />
+              : totalIncidents}
           </span>
           <span className="font-code-sm text-code-sm text-tertiary">All Handled</span>
         </div>
         <div className="mt-2 flex items-center gap-1">
-          <span className="font-label-sm text-label-sm text-outline">Across 3 Flask services</span>
+          <span className="font-label-sm text-label-sm text-outline">
+            {dashboardError ? 'Backend data unavailable' : 'Measured from incident records'}
+          </span>
         </div>
       </div>
 
@@ -31,12 +43,16 @@ export const KpiMetrics: React.FC = () => {
         </span>
         <div className="flex items-baseline gap-space-xs mt-2">
           <span className="font-headline-xl text-headline-xl font-bold text-tertiary tabular-nums">
-            {autoHealedRate}
+            {dashboardLoading
+              ? <span aria-hidden="true" className="inline-block h-8 w-16 animate-pulse rounded bg-surface-container-high" />
+              : autoHealedRate}
           </span>
           <span className="material-symbols-outlined text-tertiary text-[18px]">verified</span>
         </div>
         <div className="mt-2 flex items-center gap-1">
-          <span className="font-label-sm text-label-sm text-tertiary">0 human escalations</span>
+          <span className="font-label-sm text-label-sm text-tertiary">
+            {kpis?.humanEscalations ?? 0} human escalations
+          </span>
         </div>
       </div>
 
@@ -48,12 +64,18 @@ export const KpiMetrics: React.FC = () => {
         </span>
         <div className="flex items-baseline gap-space-xs mt-2">
           <span className="font-headline-xl text-headline-xl font-bold text-primary tabular-nums">
-            {avgDetection}
+            {dashboardLoading
+              ? <span aria-hidden="true" className="inline-block h-8 w-16 animate-pulse rounded bg-surface-container-high" />
+              : avgDetection}
           </span>
-          <span className="font-code-sm text-code-sm text-outline">±0.4s</span>
+          <span className="font-code-sm text-code-sm text-outline">
+            {kpis?.mttdSeconds.stdDev == null ? '' : `±${kpis.mttdSeconds.stdDev.toFixed(1)}s`}
+          </span>
         </div>
         <div className="mt-2 flex items-center gap-1">
-          <span className="font-label-sm text-label-sm text-outline">Health probe polling: 1.0s</span>
+          <span className="font-label-sm text-label-sm text-outline">
+            {dashboardError ? 'Could not load measured metrics' : 'Measured MTTD'}
+          </span>
         </div>
       </div>
 
@@ -65,12 +87,16 @@ export const KpiMetrics: React.FC = () => {
         </span>
         <div className="flex items-baseline gap-space-xs mt-2">
           <span className="font-headline-xl text-headline-xl font-bold text-on-surface tabular-nums">
-            {avgRecoveryTime}
+            {dashboardLoading
+              ? <span aria-hidden="true" className="inline-block h-8 w-16 animate-pulse rounded bg-surface-container-high" />
+              : avgRecoveryTime}
           </span>
-          <span className="font-code-sm text-code-sm text-tertiary">Sub-2s MTTR</span>
+          <span className="font-code-sm text-code-sm text-tertiary">Measured MTTR</span>
         </div>
         <div className="mt-2 flex items-center gap-1">
-          <span className="font-label-sm text-label-sm text-tertiary">Fastest: 0.8s (INC-102)</span>
+          <span className="font-label-sm text-label-sm text-tertiary">
+            {totalIncidents ? 'From verified incident timestamps' : 'No verified incidents'}
+          </span>
         </div>
       </div>
     </div>

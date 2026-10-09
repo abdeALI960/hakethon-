@@ -6,3 +6,11 @@ coverage/
 *.log
 .env*
 !.env.example
+*.db
+*.db-*
+venv/
+.venv/
+__pycache__/
+uploads/
+.opspilot-demo-pids.json
+.dev-logs/
