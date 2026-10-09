@@ -38,14 +38,8 @@ _MIME_FORMATS = {
 }
 _API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
-def _new_case_id(db: Session) -> str:
-    for _ in range(100):
-        candidate = f"EMG-{secrets.randbelow(9000) + 1000}"
-        exists = db.scalar(select(EmergencyCase.id).where(EmergencyCase.case_id == candidate))
-        if exists is None:
-            return candidate
-    raise AppError("CASE_ID_GENERATION_FAILED", "Could not allocate an emergency case ID.", 503)
-
+def _new_case_id() -> str:
+    return f"EMG-{uuid.uuid4().hex[:12].upper()}"
 
 def _require_evidence_auth(api_key: Annotated[str | None, Depends(_API_KEY_HEADER)]) -> None:
     configured_key = settings.api_key
