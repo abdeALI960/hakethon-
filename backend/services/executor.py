@@ -125,10 +125,13 @@ async def execute_chaos(
     selected_settings = config or settings
     if not selected_settings.chaos_enabled:
         raise AppError("CHAOS_DISABLED", "Chaos injection is disabled.", 403)
-    if action is ChaosAction.CPU and target.service is not DemoService.WORKER:
-        raise ValueError("CPU chaos is allowed only for the worker demo target")
-    if action is ChaosAction.LATENCY and target.service is not DemoService.WEB:
-        raise ValueError("Latency chaos is allowed only for the web demo target")
+    from backend.errors import AppError
+if action is ChaosAction.CPU and target.service is not DemoService.WORKER:
+    raise AppError(
+        "INVALID_CHAOS_TARGET",
+        "CPU chaos is allowed only for the worker demo target",
+        400
+    )
     return await run_in_threadpool(_run, _SCRIPTS / "inject.py", action.value, target)
 
 
