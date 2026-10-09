@@ -73,12 +73,8 @@ def _store_probe(endpoint_id: int, probe: Probe) -> None:
             )
         )
         db.flush()
-        keep_ids = (
-            select(ProbeResult.id)
-            .where(ProbeResult.endpoint_id == endpoint_id)
-            .order_by(ProbeResult.checked_at.desc(), ProbeResult.id.desc())
-            .limit(1000)
-        )
+        PROBE_HISTORY_LIMIT = int(os.getenv("PROBE_HISTORY_LIMIT", "1000"))
+.limit(PROBE_HISTORY_LIMIT)
         db.execute(
             delete(ProbeResult).where(
                 ProbeResult.endpoint_id == endpoint_id,
