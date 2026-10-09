@@ -185,9 +185,10 @@ async def upload_evidence(
         evidence_file.write(content)
 
     relative_path = (Path("uploads") / filename).as_posix()
-    case.evidence_path = relative_path
-    try:
-        db.commit()
+     with destination.open("xb") as evidence_file:
+        evidence_file.write(content)
+except (OSError, IOError) as e:
+    raise AppError("EVIDENCE_WRITE_FAILED", "Could not write evidence file.", 500) from e
     except Exception:
         db.rollback()
         destination.unlink(missing_ok=True)
