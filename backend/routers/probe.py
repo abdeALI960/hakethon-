@@ -66,13 +66,5 @@ def services_health(db: Session = Depends(get_db)) -> list[ServiceHealth]:
             status = "degraded"
         else:
             status = "healthy"
-        results.append(
-            ServiceHealth(
-                service=endpoint.service_key or endpoint.name,
-                port=endpoint.port,
-                status=status,
-                latency_ms=latest.ping_latency_ms if latest else None,
-                last_checked_utc=utc_iso(latest.checked_at) if latest else None,
-            )
-        )
+       latency_ms=latest.ping_latency_ms if latest else 0,
     return results
