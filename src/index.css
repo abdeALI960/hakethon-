@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #0f131c;
+  --color-background: #0f131c;
+  --color-surface-dim: #0f131c;
+  --color-surface-bright: #353942;
+  --color-surface-container-lowest: #0a0e16;
+  --color-surface-container-low: #181c24;
+  --color-surface-container: #1c2028;
+  --color-surface-container-high: #262a33;
+  --color-surface-container-highest: #31353e;
+  --color-surface-variant: #31353e;
+  --color-on-surface: #dfe2ee;
+  --color-on-surface-variant: #bcc9cd;
+  --color-on-background: #dfe2ee;
+  --color-inverse-surface: #dfe2ee;
+  --color-inverse-on-surface: #2c3039;
+  --color-outline: #869397;
+  --color-outline-variant: #3d494c;
+  --color-primary: #4cd7f6;
+  --color-primary-container: #06b6d4;
+  --color-on-primary: #003640;
+  --color-on-primary-container: #00424f;
+  --color-tertiary: #4edea3;
+  --color-tertiary-container: #1bbd85;
+  --color-on-tertiary: #003824;
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-secondary: #c0c1ff;
+  --color-secondary-container: #3131c0;
+
+  --font-headline-xl: 'Geist', sans-serif;
+  --font-headline-lg: 'Geist', sans-serif;
+  --font-headline-md: 'Geist', sans-serif;
+  --font-body-lg: 'Geist', sans-serif;
+  --font-body-md: 'Geist', sans-serif;
+  --font-body-sm: 'Geist', sans-serif;
+  --font-code-lg: 'JetBrains Mono', monospace;
+  --font-code-md: 'JetBrains Mono', monospace;
+  --font-code-sm: 'JetBrains Mono', monospace;
+  --font-label-md: 'JetBrains Mono', monospace;
+  --font-label-sm: 'JetBrains Mono', monospace;
+
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 0.75rem;
+  --spacing-space-lg: 1rem;
+  --spacing-space-xl: 1.5rem;
+  --spacing-margin: 1rem;
+  --spacing-margin-desktop: 1.5rem;
+  --spacing-gutter: 0.75rem;
+  --spacing-gutter-desktop: 1rem;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #0f131c;
+    color: #dfe2ee;
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0f131c;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #262a33;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #31353e;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography Scale helper classes from design tokens */
+.text-headline-xl {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.02em;
+}
+.text-headline-lg {
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.015em;
+}
+.text-headline-md {
+  font-size: 18px;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+}
+.text-body-lg {
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: -0.005em;
+}
+.text-body-md {
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0em;
+}
+.text-body-sm {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0em;
+}
+.text-code-lg {
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: -0.01em;
+}
+.text-code-md {
+  font-size: 12px;
+  line-height: 18px;
+  letter-spacing: 0em;
+}
+.text-code-sm {
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+.text-label-md {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.04em;
+}
+.text-label-sm {
+  font-size: 10px;
+  line-height: 12px;
+  letter-spacing: 0.06em;
+}
